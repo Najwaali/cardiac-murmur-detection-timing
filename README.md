@@ -45,3 +45,8 @@ python src/phase1_data_loading.py
 ```
 ```bash
 python src/train_phase1_fixed_ensemble.py
+```
+
+```bash
+python src/train_phase2_timing.py
+```
