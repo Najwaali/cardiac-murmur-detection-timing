@@ -16,10 +16,7 @@ The dataset is not redistributed in this repository. Users should download it di
 - `src/phase1_data_loading.py`: loads the CirCor dataset, preprocesses PCG recordings, slices 5-second windows, and creates patient-level train/validation/test splits.
 - `src/train_phase1_fixed_ensemble.py`: trains the Phase 1 murmur detection model using a fixed patient-level split and a 5-model ensemble.
 - `src/train_phase2_timing.py`: trains the Phase 2 systolic/diastolic timing classifier using cardiac phase segments.
-- `splits/`: patient-level split files used for reproducibility.
-- `models/`: trained model weights.
-- `results/`: reported numerical results and ablation tables.
-- `figures/`: figures generated from the experiments.
+- `requirements.txt`: lists the Python packages required to run the code.
 ## Method Summary
 
 Phase 1 performs patient-level murmur detection using 5-second raw PCG windows.  
