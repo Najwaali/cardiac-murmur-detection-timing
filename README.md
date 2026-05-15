@@ -10,17 +10,16 @@ https://physionet.org/content/circor-heart-sound/1.0.3/
 
 The dataset is not redistributed in this repository. Users should download it directly from PhysioNet and update the dataset path in the configuration files.
 
+
 ## Project Structure
 
-- `train_phase1.py`: trains the murmur detection model.
-- `train_phase2.py`: trains the systolic/diastolic timing classifier.
-- `inference_pipeline.py`: runs the full two-stage inference pipeline.
-- `preprocessing.py`: filtering, normalization, windowing, and segment extraction.
-- `evaluation.py`: accuracy, F1-score, confusion matrix, threshold sweep, and cross-validation evaluation.
-- `splits/`: patient-level fixed split and cross-validation fold files.
+- `src/phase1_data_loading.py`: loads the CirCor dataset, preprocesses PCG recordings, slices 5-second windows, and creates patient-level train/validation/test splits.
+- `src/train_phase1_fixed_ensemble.py`: trains the Phase 1 murmur detection model using a fixed patient-level split and a 5-model ensemble.
+- `src/train_phase2_timing.py`: trains the Phase 2 systolic/diastolic timing classifier using cardiac phase segments.
+- `splits/`: patient-level split files used for reproducibility.
+- `models/`: trained model weights.
 - `results/`: reported numerical results and ablation tables.
-- `figures/`: figures used in the report.
-
+- `figures/`: figures generated from the experiments.
 ## Method Summary
 
 Phase 1 performs patient-level murmur detection using 5-second raw PCG windows.  
@@ -36,3 +35,4 @@ Install dependencies using:
 
 ```bash
 pip install -r requirements.txt
+```
