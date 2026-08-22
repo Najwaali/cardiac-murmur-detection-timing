@@ -165,6 +165,19 @@ strategy_d_fixed_crop.py
         |       |
         |       +--> gradcam_mb_vs_nmb.py
         |
-        +--> gradcam_original_padded.py
+        +--> old-model setup / checkpoint loading
                 |
-                +--> gradcam_before_after.py
+                +--> gradcam_original_padded.py
+                        |
+                        +--> gradcam_before_after.py
+
+The Grad-CAM scripts are intended to be executed sequentially in the same Python session. In particular:
+
+- `strategy_d_fixed_crop.py` creates the reconstructed Strategy D dataset and fixed-crop model objects.
+- `gradcam_strategy_d.py` creates the patient-level Strategy D edge/interior Grad-CAM statistics.
+- `gradcam_mb_vs_nmb.py` creates the MB-versus-NMB Grad-CAM results used in the final comparison.
+- The original Phase 2 checkpoint is then loaded and the old padded-model Grad-CAM object is created.
+- `gradcam_original_padded.py` reconstructs the eligible original padded-model cohort and creates `old_all_df`. 
+- `gradcam_before_after.py` uses the original and fixed-crop Grad-CAM results to generate the final before/after figure.
+
+Because these analysis scripts share in-memory objects, they should be run in the order shown above within the same analysis session.
