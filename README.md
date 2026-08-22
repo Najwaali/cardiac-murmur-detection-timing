@@ -39,11 +39,7 @@ The PhysioNet/CinC 2016 heart sound database is additionally used for cross-data
 - `src/phase2_mobilenet1d_baseline.py`  
   Trains the MobileNet1D baseline used for comparison with the original Phase 2 classifier.
 
-- `src/combined_pipeline_inference.py`  
-  Runs the original combined inference pipeline.
 
-- `src/combined_pipeline_ablation.py`  
-  Performs ablation analysis for the original combined pipeline.
 
 ### Shortcut Diagnosis
 
