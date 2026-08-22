@@ -1,19 +1,25 @@
 """
-Original padded-model Grad-CAM preparation for Fig. 5.
+Rebuild the original padded-model Grad-CAM cohort used for the
+before/after comparison figure.
 
-This script rebuilds `old_all_df`, the DataFrame required by
-`gradcam_before_after.py`, and reports overlap between the original padded-model
-cohort and the fixed-crop Strategy D cohort.
+This script:
 
-It assumes the following objects are already available:
+1. Reconstructs 1-second zero-padded systolic murmur-bearing inputs
+   from `data_d`.
+2. Runs the original padded systolic-versus-diastolic model to identify
+   eligible correctly classified systolic segments with duration >= 0.15 s.
+3. Computes Grad-CAM maps for those segments.
+4. Builds `old_all_df`, containing:
+      patient_id, true_dur, true_samp, padding_only, cam_up
+5. Reports cohort overlap with the fixed-crop Strategy D Grad-CAM cohort.
 
-- correct_idx:
-    indices of eligible correctly classified systolic murmur-bearing segments
-    from the original padded model.
-- mb_sys_df:
-    metadata table aligned with `mb_sys_audio`.
-- mb_sys_audio:
-    1-second zero-padded inputs for the original model.
+Required objects already in memory:
+
+- data_d:
+    full Strategy D source DataFrame containing raw_audio, label,
+    seg_phase, duration_sec, and patient_id.
+- model_old:
+    trained original systolic-versus-diastolic model.
 - gradcam_old:
     GradCAM1D object attached to the original padded model.
 - DEVICE:
@@ -26,9 +32,11 @@ It assumes the following objects are already available:
     patient-level Strategy D edge/interior Grad-CAM table from
     `gradcam_strategy_d.py`.
 
-The resulting `old_all_df` contains:
-patient_id, true_dur, true_samp, padding_only, and cam_up.
+The resulting `old_all_df` is used by `gradcam_before_after.py`.
 """
+
+
+
 
 import numpy as np
 import pandas as pd
@@ -42,7 +50,106 @@ import torch
 TARGET_LEN_OLD = 4000
 EDGE_OLD = int(0.050 * SAMPLE_RATE)  # 50 ms
 
+# =============================================================
+# Rebuild old padded-model inputs and eligible cohort
+# =============================================================
 
+def standardize(signal):
+    mu = np.mean(signal)
+    std = np.std(signal) + 1e-8
+    return ((signal - mu) / std).astype(np.float32)
+
+
+def make_padded_segment(seg_raw, target_len=TARGET_LEN_OLD):
+    """
+    Reproduce the original Phase 2 input:
+    zero-pad or truncate to 1 second.
+    """
+    seg = seg_raw.copy()
+
+    if len(seg) < target_len:
+        seg = np.pad(
+            seg,
+            (0, target_len - len(seg))
+        )
+    else:
+        seg = seg[:target_len]
+
+    return standardize(seg)
+
+
+# Use all available murmur-bearing systolic intervals
+# from the reconstructed Strategy D source dataset.
+mb_sys_df = data_d[
+    (data_d["label"] == 1) &
+    (data_d["seg_phase"] == "systolic")
+].copy().reset_index(drop=True)
+
+print(
+    f"MB systolic segments: "
+    f"{len(mb_sys_df):,}"
+)
+print(
+    f"Patients: "
+    f"{mb_sys_df['patient_id'].nunique()}"
+)
+
+
+# Recreate 1-second inputs used by the original padded model
+mb_sys_audio = np.stack([
+    make_padded_segment(
+        row["raw_audio"]
+    )
+    for _, row in mb_sys_df.iterrows()
+])
+
+print(
+    f"Old-model input shape: "
+    f"{mb_sys_audio.shape}"
+)
+
+
+# Identify correctly classified systolic intervals
+with torch.no_grad():
+    sys_preds = torch.argmax(
+        model_old(
+            torch.FloatTensor(
+                mb_sys_audio[
+                    :, np.newaxis, :
+                ]
+            ).to(DEVICE)
+        ),
+        dim=1
+    ).cpu().numpy()
+
+
+# Final old-model Grad-CAM cohort:
+# correctly classified systolic MB intervals
+# with duration >= 150 ms
+eligible_mask = (
+    (sys_preds == 0) &
+    (
+        mb_sys_df[
+            "duration_sec"
+        ].values >= 0.15
+    )
+)
+
+correct_idx = np.where(
+    eligible_mask
+)[0]
+
+print(
+    f"Correctly classified + "
+    f"duration >= 0.15 s: "
+    f"{len(correct_idx):,}"
+)
+
+print(
+    f"Patients represented: "
+    f"{mb_sys_df.iloc[correct_idx]"
+    f"['patient_id'].nunique()}"
+)
 # =============================================================
 # Rebuild old-model Grad-CAM table
 # =============================================================
